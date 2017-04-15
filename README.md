@@ -6,7 +6,7 @@ Web application to transfer text messages and files securely.
 
 ## Quick start
 
-```js
+```sh
 ./gradlew build
 docker build -t secure-transfer .
 docker run -d --name secure-transfer secure-transfer
