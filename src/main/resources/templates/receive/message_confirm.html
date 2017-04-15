@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Confirm secure message retrieval</title>
+</head>
+<body>
+
+<div data-layout-fragment="content">
+
+    <div class="page-header">
+        <h1>Confirm message retrieval</h1>
+    </div>
+
+    <div class="alert alert-success" role="alert">
+        We have a message for you. The message can only be retrieved once. Do you want to see it now?
+    </div>
+
+    <form th:action="@{/receive/confirm/{id}(id=${id})}" th:object="${command}" method="get">
+        <button type="submit" class="btn btn-primary">
+            <i class="glyphicon glyphicon-ok icon-white"></i>
+            Yes, show me the message!
+        </button>
+    </form>
+
+</div>
+
+</body>
+</html>

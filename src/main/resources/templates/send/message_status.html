@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Secure Transfer Message status</title>
+</head>
+<body>
+
+<!--/*@thymesVar id="senderMessage" type="de.siegmar.securetransfer.domain.SenderMessage"*/-->
+
+<div data-layout-fragment="content">
+
+    <div class="page-header">
+        <h1>Your sent message</h1>
+    </div>
+
+    <div th:unless="${senderMessage.received}">
+        <div class="alert alert-success" role="alert">
+            Message successfully sent!
+        </div>
+
+        <div class="input-group">
+            <input id="secret-url" type="text" class="form-control input-sm" th:value="${receiveUrl}" readonly>
+
+            <div class="input-group-btn">
+                <button class="clipboard-btn btn btn-primary btn-sm" data-clipboard-target="#secret-url">
+                    <i class="glyphicon glyphicon-copy icon-white"></i>
+                    Copy
+                </button>
+            </div>
+        </div>
+
+        <span id="helpBlock" class="help-block">
+            This link is needed by the recipient to receive your message.
+            <strong th:if="${senderMessage.passwordEncrypted}">Password required for retrieval!</strong>
+            <br>
+            The message will automatically expire on <span th:text="${senderMessage.expiration}"></span>.
+        </span>
+
+    </div>
+
+    <div class="form-group" th:if="${message}" style="margin-top: 50px">
+        <label for="message" class="control-label">Message</label>
+        <textarea class="form-control" rows="5" id="message" th:text="${message}" autocomplete="off" readonly></textarea>
+    </div>
+
+    <div class="panel panel-info" th:if="${senderMessage.received}">
+        <div class="panel-heading">Message received</div>
+        <div class="panel-body">
+            Your message has been received and burned at
+            <span th:text="${senderMessage.received}"></span>
+        </div>
+    </div>
+
+    <div th:unless="${senderMessage.received}" style="margin-top: 50px">
+        <p>Changed your mind and want to burn the message yourself?</p>
+        <form th:action="@{/send/{id}(id=${senderMessage.id})}" method="post">
+
+            <input type="hidden" name="_method" value="DELETE"/>
+
+            <button type="submit" class="btn btn-danger">
+                <i class="glyphicon glyphicon-trash icon-white"></i>
+                Yes, burn my message!
+            </button>
+
+        </form>
+    </div>
+
+    <a class="btn btn-default btn-block" th:href="@{/send}" style="margin-top: 50px">
+        <i class="glyphicon glyphicon-share icon-white"></i>
+        Start new Secure Transfer
+    </a>
+
+</div>
+
+</body>
+</html>

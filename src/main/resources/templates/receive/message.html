@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Your secure message</title>
+    <script>
+        $(function() {
+            $('.list-group-item').click(function () {
+                e = $(this);
+                if (!e.hasClass('disabled')) {
+                    e.addClass('disabled');
+                    e.text("[downloaded & burned] " + $(this).text());
+                    setTimeout(function () {
+                        e.removeAttr('href')
+                    }, 100);
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+
+<!--/*@thymesVar id="decryptedMessage" type="de.siegmar.securetransfer.domain.DecryptedMessage"*/-->
+
+<div data-layout-fragment="content">
+
+    <div class="page-header">
+        <h1>Your message</h1>
+    </div>
+
+    <div class="alert alert-success" role="alert">
+        Message successfully decrypted!
+    </div>
+
+    <div class="form-group" th:if="${decryptedMessage.message}">
+        <label for="message" class="control-label">Your message</label>
+        <textarea class="form-control" rows="5" id="message" th:field="*{decryptedMessage.message}" autocomplete="off" readonly></textarea>
+
+        <button class="clipboard-btn btn btn-primary" data-clipboard-target="#message">
+            <i class="glyphicon glyphicon-copy icon-white"></i>
+            Copy to clipboard
+        </button>
+    </div>
+
+    <div th:if="${!decryptedMessage.files.isEmpty()}">
+        <h2>
+            Here are your files:<br>
+        </h2>
+        <div class="list-group">
+            <a class="list-group-item" th:each="file : ${decryptedMessage.files}" th:href="@{/receive/file/{id}/{keyIv}(id=${file.id},keyIv=${file.keyHex})}" target="_blank">
+                <i class="glyphicon glyphicon-save-file"></i>
+                <span th:text="${file.name}"></span>
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        This message has been burned - save it, otherwise it's lost!
+    </div>
+
+    <a class="btn btn-default" th:href="@{/send}">
+        <i class="glyphicon glyphicon-share icon-white"></i>
+        Reply with your secret message
+    </a>
+
+</div>
+
+</body>
+</html>

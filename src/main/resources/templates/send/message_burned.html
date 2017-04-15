@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Message burned</title>
+</head>
+<body>
+
+<div data-layout-fragment="content">
+
+    <div class="page-header">
+        <h1>Message burned</h1>
+    </div>
+
+    <div class="alert alert-success" role="alert">
+        Your message has been successfully burned.
+    </div>
+
+    <a class="btn btn-default btn-block" th:href="@{/send}" style="margin-top: 50px">
+        <i class="glyphicon glyphicon-share icon-white"></i>
+        Start new Secure Transfer
+    </a>
+
+</div>
+
+</body>
+</html>

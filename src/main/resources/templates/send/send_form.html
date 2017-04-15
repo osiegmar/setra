@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Secure Transfer message</title>
+    <script th:src="@{/webjars/pwstrength-bootstrap/2.0.3/dist/pwstrength-bootstrap.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap-maxlength/1.7.0/src/bootstrap-maxlength.js}"></script>
+    <script>
+        $(function () {
+            $('#message').maxlength({
+                alwaysShow: true
+            });
+            $('#pwd').maxlength({
+                placement: 'centered-right'
+            });
+            $('#pwd').pwstrength({
+                ui: { showVerdictsInsideProgressBar: true }
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div data-layout-fragment="content">
+
+    <div class="page-header">
+        <h1>Secure Transfer</h1>
+    </div>
+
+    <p>Securely send your sensitive data.</p>
+
+    <form th:action="@{/send}" method="post" th:object="${command}" enctype="multipart/form-data" autocomplete="off">
+
+        <div class="panel panel-danger" th:if="${#fields.hasAnyErrors()}">
+            <div class="panel-heading">Error processing your request</div>
+            <div class="panel-body" th:if="${#fields.hasGlobalErrors()}">
+                <ul>
+                    <li th:each="err : ${#fields.globalErrors()}" th:text="${err}">...</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="form-group" th:classappend="${#fields.hasErrors('message')} ? 'has-error'">
+            <label for="message" class="control-label">Message</label>
+            <textarea class="form-control" rows="5" id="message" th:field="*{message}" th:maxlength="${message_max_length}" autocomplete="off"></textarea>
+            <span class="help-block" th:if="${#fields.hasErrors('message')}" th:errors="*{message}">Incorrect</span>
+        </div>
+
+        <div class="form-group" th:classappend="${#fields.hasErrors('files')} ? 'has-error'">
+            <label for="message" class="control-label">Files</label>
+            <input type="file" id="files" th:field="*{files}" multiple>
+            <span class="help-block" th:if="${#fields.hasErrors('files')}" th:errors="*{files}">Incorrect</span>
+        </div>
+
+        <div class="form-group" th:classappend="${#fields.hasErrors('expirationDays')} ? 'has-error'">
+            <label for="expirationDays" class="control-label">Expiration (in days)</label>
+            <input type="number" class="form-control" id="expirationDays" th:field="*{expirationDays}" min="1" th:max="${max_expiration}">
+            <span class="help-block" th:if="${#fields.hasErrors('expirationDays')}" th:errors="*{expirationDays}">Incorrect</span>
+        </div>
+
+        <div class="form-group" th:classappend="${#fields.hasErrors('password')} ? 'has-error'">
+            <label for="pwd" class="control-label">Password</label>
+            <input type="text" class="form-control" id="pwd" th:field="*{password}" th:maxlength="${password_max_length}" placeholder="Optionally encrypt your message with an individual password" autocomplete="off">
+            <span class="help-block" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Incorrect</span>
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn btn-primary">
+            <i class="glyphicon glyphicon-share icon-white"></i>
+            Encrypt data & create secret link
+        </button>
+    </form>
+</div>
+
+</body>
+</html>

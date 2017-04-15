@@ -1,0 +1,7 @@
+${AnsiColor.BRIGHT_RED}   _____                          ${AnsiColor.BLUE}    ______                      ____
+${AnsiColor.BRIGHT_RED}  / ___/___  _______  __________  ${AnsiColor.BLUE}   /_  __/________ _____  _____/ __/__  _____
+${AnsiColor.BRIGHT_RED}  \__ \/ _ \/ ___/ / / / ___/ _ \ ${AnsiColor.BLUE}    / / / ___/ __ `/ __ \/ ___/ /_/ _ \/ ___/
+${AnsiColor.BRIGHT_RED} ___/ /  __/ /__/ /_/ / /  /  __/ ${AnsiColor.BLUE}   / / / /  / /_/ / / / (__  ) __/  __/ /
+${AnsiColor.BRIGHT_RED}/____/\___/\___/\__,_/_/   \___/  ${AnsiColor.BLUE}  /_/ /_/   \__,_/_/ /_/____/_/  \___/_/
+
+${AnsiColor.BRIGHT_BLUE}:: Secure Transfer ${application.version} :: Running on Spring Boot ${spring-boot.version} ::${AnsiColor.WHITE}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" data-layout-decorate="~{layout}">
+<head>
+    <meta charset="utf-8">
+    <title>Secure Transfer</title>
+</head>
+<body>
+
+<div data-layout-fragment="content">
+
+    <h1 th:text="${error}">Error</h1>
+
+    <div class="alert alert-danger" role="alert" th:text="${message}">
+        Error
+    </div>
+
+</div>
+
+</body>
+</html>
