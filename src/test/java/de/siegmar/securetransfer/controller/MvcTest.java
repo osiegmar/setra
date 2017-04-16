@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -145,7 +146,8 @@ public class MvcTest {
         // Check message is burned
         mockMvc.perform(get(receiveUrl))
             .andExpect(status().isNotFound())
-            .andExpect(content().contentType("text/html;charset=UTF-8"));
+            .andExpect(content().contentType("text/html;charset=UTF-8"))
+            .andExpect(view().name("message_not_found"));
 
         // Check sender status page
         final MvcResult messageStatusResult2 = mockMvc.perform(get(messageStatusUrl))
@@ -173,7 +175,7 @@ public class MvcTest {
 
         // Create new message and expect redirect with flash message after store
         final MvcResult createMessageResult = mockMvc.perform(fileUpload("/send")
-            .file("files", fileContent .getBytes(StandardCharsets.UTF_8))
+            .file("files", fileContent.getBytes(StandardCharsets.UTF_8))
             .param("message", messageToSend)
             .param("password", password))
             .andExpect(status().isFound())
@@ -235,16 +237,31 @@ public class MvcTest {
         final String fileKey = file.getKeyHex();
 
         // Download file
-        mockMvc.perform(get("/receive/file/{id}/{key}", fileId, fileKey)
-            .sessionAttr("iv_file_" + fileId, file.getKeyIv().getIv()))
+        final MvcResult downloadResult = mockMvc
+            .perform(get("/receive/file/{id}/{key}", fileId, fileKey)
+                .sessionAttr("iv_file_" + fileId, file.getKeyIv().getIv()))
+            .andExpect(request().asyncStarted())
+            //.andExpect(request().asyncResult("Deferred result"))
             .andExpect(status().isOk())
             .andExpect(content().contentType("application/octet-stream"))
-            .andExpect(content().string(fileContent));
+            .andReturn();
+
+        downloadResult.getAsyncResult();
+        assertEquals(fileContent, downloadResult.getResponse().getContentAsString());
 
         // Check message is burned
         mockMvc.perform(get(receiveUrl))
             .andExpect(status().isNotFound())
-            .andExpect(content().contentType("text/html;charset=UTF-8"));
+            .andExpect(content().contentType("text/html;charset=UTF-8"))
+            .andExpect(view().name("message_not_found"));
+
+        // Check file is burned
+        mockMvc
+            .perform(get("/receive/file/{id}/{key}", fileId, fileKey)
+                .sessionAttr("iv_file_" + fileId, file.getKeyIv().getIv()))
+            .andExpect(status().isNotFound())
+            .andExpect(content().contentType("text/html;charset=UTF-8"))
+            .andExpect(view().name("message_not_found"));
 
         // Check sender status page
         final MvcResult messageStatusResult2 = mockMvc.perform(get(messageStatusUrl))
