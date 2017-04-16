@@ -63,6 +63,12 @@ tasks.withType(FindBugs) {
     }
 }
 
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}
+
 task extractFatJar() {
     doLast {
         copy {
