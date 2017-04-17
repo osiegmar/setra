@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 JAVA_HEAP_MIN=${JAVA_HEAP_MIN:="-Xms32m"}
 JAVA_HEAP_MAX=${JAVA_HEAP_MAX:="-Xmx54613K"}

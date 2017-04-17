@@ -1,4 +1,4 @@
-FROM java:8u111-jre
+FROM java:8u111-jre-alpine
 COPY securetransfer.sh /
 COPY build/unzipped/META-INF /app/META-INF
 COPY build/unzipped/org /app/org
