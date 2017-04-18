@@ -20,13 +20,10 @@ import com.google.common.io.BaseEncoding;
 
 public class DecryptedFile {
 
-    private String id;
-    private String name;
-    private long originalFileSize;
-    private KeyIv keyIv;
-
-    public DecryptedFile() {
-    }
+    private final String id;
+    private final String name;
+    private final long originalFileSize;
+    private final KeyIv keyIv;
 
     public DecryptedFile(final String id, final String name, final long originalFileSize,
                          final KeyIv keyIv) {
@@ -40,24 +37,12 @@ public class DecryptedFile {
         return id;
     }
 
-    public void setId(final String id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
 
-    public void setName(final String name) {
-        this.name = name;
-    }
-
     public long getOriginalFileSize() {
         return originalFileSize;
-    }
-
-    public void setOriginalFileSize(final long originalFileSize) {
-        this.originalFileSize = originalFileSize;
     }
 
     public KeyIv getKeyIv() {
@@ -66,10 +51,6 @@ public class DecryptedFile {
 
     public String getKeyHex() {
         return BaseEncoding.base16().lowerCase().encode(keyIv.getKey());
-    }
-
-    public void setKeyIv(final KeyIv keyIv) {
-        this.keyIv = keyIv;
     }
 
 }
