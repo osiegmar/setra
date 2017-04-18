@@ -42,3 +42,32 @@ location / {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 ```
+
+### Configuration properties
+
+Secure Transfer uses [Spring Boot](https://projects.spring.io/spring-boot/) and thus offers a
+wide range of configuration properties. The following is just an overview of the most important
+options.
+
+
+* **SECURETRANSFER_BASE_DIR**:
+  The base directory where Secure Transfer will create its own directory structure.
+  Default: /securetransfer within the docker build, ${java.io.tmpdir}/securetransfer otherwise.
+
+* **SERVER_USE_FORWARD_HEADERS**:
+  If X-Forwarded-* headers should be applied to the HttpRequest.
+  Default: false
+
+* **SPRING_HTTP_MULTIPART_MAX_FILE_SIZE**:
+  Max file size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte size.
+  Default: 2048MB
+
+* **SPRING_HTTP_MULTIPART_MAX_REQUEST_SIZE**:
+  Max request size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte
+  size.
+  Default: 2048MB
+
+* **SPRING_HTTP_MULTIPART_FILE_SIZE_THRESHOLD**:
+  Threshold after which files will be written to disk. Values can use the suffixed "MB" or "KB" to
+  indicate a Megabyte or Kilobyte size.
+  Default: 5MB
