@@ -23,7 +23,7 @@ import org.hibernate.validator.constraints.NotBlank;
 public class DecryptMessageCommand {
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = EncryptMessageCommand.PASSWORD_MAX_LENGTH)
     private String password;
 
     public String getPassword() {
