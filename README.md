@@ -4,6 +4,14 @@
 
 Web application to transfer text messages and files securely.
 
+
+## Prerequisites
+
+This application needs strong cryptography. Either install
+[Java Cryptography Extension (JCE)](http://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html)
+when using Oracle JDK or use [OpenJDK](http://openjdk.java.net).
+
+
 ## Quick start
 
 Use prebuilt docker image [osiegmar/setra](https://hub.docker.com/r/osiegmar/setra/) or create
