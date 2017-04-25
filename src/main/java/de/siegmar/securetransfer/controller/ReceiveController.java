@@ -158,6 +158,7 @@ public class ReceiveController {
         final StreamingResponseBody body = out -> {
             try (final InputStream in = messageService.getStoredFileInputStream(id, keyIv)) {
                 ByteStreams.copy(in, out);
+                out.flush();
             }
 
             messageService.burnFile(id);

@@ -43,7 +43,13 @@ And a NGINX proxy configuration:
 ```
 location / {
     proxy_pass http://localhost:8500/;
-    proxy_redirect off;
+
+    # Keep this value in sync with SPRING_HTTP_MULTIPART_MAX_REQUEST_SIZE
+    client_max_body_size 2048M;
+
+    proxy_buffering off;
+    proxy_request_buffering off;
+
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -79,3 +85,7 @@ options.
   Threshold after which files will be written to disk. Values can use the suffixed "MB" or "KB" to
   indicate a Megabyte or Kilobyte size.
   Default: 5MB
+
+* **SPRING_MVC_ASYNC_REQUEST_TIMEOUT**:
+  The maximum duration (in milliseconds) for a file download.
+  Default: 3600000 ms (one hour)
