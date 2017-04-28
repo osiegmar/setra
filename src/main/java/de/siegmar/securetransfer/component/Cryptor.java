@@ -78,7 +78,8 @@ public class Cryptor {
         try {
             final int keyLength = Cipher.getMaxAllowedKeyLength("AES");
             if (keyLength < MIN_KEY_LENGTH) {
-                throw new IllegalStateException("MaxAllowedKeyLength for AES is " + keyLength);
+                throw new IllegalStateException("MaxAllowedKeyLength for AES is " + keyLength + "! "
+                    + "Either install JCE for Oracle JDK or use OpenJDK.");
             }
         } catch (final NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
