@@ -68,24 +68,19 @@ options.
   The base directory where Secure Transfer will create its own directory structure.
   Default: /securetransfer within the docker build, ${java.io.tmpdir}/securetransfer otherwise.
 
+* **SECURETRANSFER_MAX_FILE_SIZE**:
+  Max file size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte size.
+  Default: 2147483648 (2 GB)
+
+* **SECURETRANSFER_MAX_REQUEST_SIZE**:
+  Max request size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte
+  size.
+  Default: 2147483648 (2 GB)
+
 * **SERVER_USE_FORWARD_HEADERS**:
   If X-Forwarded-* headers should be applied to the HttpRequest.
   Default: false
 
-* **SPRING_HTTP_MULTIPART_MAX_FILE_SIZE**:
-  Max file size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte size.
-  Default: 2048MB
-
-* **SPRING_HTTP_MULTIPART_MAX_REQUEST_SIZE**:
-  Max request size. Values can use the suffixed "MB" or "KB" to indicate a Megabyte or Kilobyte
-  size.
-  Default: 2048MB
-
-* **SPRING_HTTP_MULTIPART_FILE_SIZE_THRESHOLD**:
-  Threshold after which files will be written to disk. Values can use the suffixed "MB" or "KB" to
-  indicate a Megabyte or Kilobyte size.
-  Default: 5MB
-
 * **SPRING_MVC_ASYNC_REQUEST_TIMEOUT**:
   The maximum duration (in milliseconds) for a file download.
-  Default: 3600000 ms (one hour)
+  Default: 3600000 ms (1 hour)

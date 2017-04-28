@@ -44,6 +44,10 @@ public class SecureTransferConfiguration {
 
     private boolean createBaseDir = true;
 
+    private long maxRequestSize;
+
+    private long maxFileSize;
+
     @NotNull
     private String messageRepository;
 
@@ -66,6 +70,22 @@ public class SecureTransferConfiguration {
 
     public void setCreateBaseDir(final boolean createBaseDir) {
         this.createBaseDir = createBaseDir;
+    }
+
+    public long getMaxRequestSize() {
+        return maxRequestSize;
+    }
+
+    public void setMaxRequestSize(final long maxRequestSize) {
+        this.maxRequestSize = maxRequestSize;
+    }
+
+    public long getMaxFileSize() {
+        return maxFileSize;
+    }
+
+    public void setMaxFileSize(final long maxFileSize) {
+        this.maxFileSize = maxFileSize;
     }
 
     public String getMessageRepository() {

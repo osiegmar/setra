@@ -22,11 +22,14 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
@@ -49,6 +52,7 @@ public class FileDiskRepository implements FileRepository {
     private static final Logger LOG = LoggerFactory.getLogger(FileDiskRepository.class);
     private static final String META_SUFFIX = ".meta";
     private static final String DATA_SUFFIX = ".data";
+    private static final String TMP_SUFFIX = ".tmp";
 
     private final Path storePath;
     private final Cryptor cryptor;
@@ -58,16 +62,29 @@ public class FileDiskRepository implements FileRepository {
 
     private final Map<String, SecretFile> files = new ConcurrentHashMap<>();
 
-    public FileDiskRepository(final Path baseDir,
-                              final Cryptor cryptor) throws IOException {
+    public FileDiskRepository(final Path baseDir, final Cryptor cryptor) throws IOException {
         this.storePath = Files.createDirectories(baseDir.resolve("store"));
         this.cryptor = cryptor;
     }
 
     @PostConstruct
     public void init() throws IOException {
+        final List<Path> storedFiles = Files.list(storePath).collect(Collectors.toList());
+
+        storedFiles.stream()
+            .filter(p -> p.getFileName().toString().endsWith(DATA_SUFFIX + TMP_SUFFIX))
+            .forEach(file -> {
+                try {
+                    LOG.info("Clean up stale upload tmp file: {}", file);
+                    Files.delete(file);
+                } catch (final IOException e) {
+                    LOG.error("Error deleting stale upload tmp file: {}", file, e);
+                }
+            });
+
+
         final AtomicInteger initCnt = new AtomicInteger();
-        Files.list(storePath)
+        storedFiles.stream()
             .filter(p -> p.getFileName().toString().endsWith(META_SUFFIX))
             .forEach(file -> {
                 try {
@@ -107,14 +124,20 @@ public class FileDiskRepository implements FileRepository {
 
         final Path metaFile = resolveMetaPath(id);
         final Path dataFile = resolveDataPath(id);
+        final Path dataTmpFile = dataFile.resolveSibling(dataFile.getFileName() + TMP_SUFFIX);
 
         try {
             final long originalFileSize;
 
             try (final OutputStream cryptOut = cryptor.getCryptOut(
-                Files.newOutputStream(dataFile), key)) {
+                Files.newOutputStream(dataTmpFile), key)) {
                 originalFileSize = ByteStreams.copy(in, cryptOut);
+            } catch (final IOException e) {
+                Files.delete(dataTmpFile);
+                throw e;
             }
+
+            Files.move(dataTmpFile, dataFile, StandardCopyOption.ATOMIC_MOVE);
 
             final SecretFile secretFile =
                 new SecretFile(id, originalName, originalFileSize, Files.size(dataFile),

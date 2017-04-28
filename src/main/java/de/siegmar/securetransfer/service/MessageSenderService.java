@@ -16,20 +16,15 @@
 
 package de.siegmar.securetransfer.service;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
@@ -68,14 +63,16 @@ public class MessageSenderService {
     /**
      * Stores a new secure message and return the senderId.
      */
-    public String storeMessage(final String message, final List<MultipartFile> files,
-                               final String password, final Instant expiration) {
+    public String storeMessage(final String message, final List<SecretFile> files,
+                               final KeyIv encryptionKey, final String password,
+                               final Instant expiration) {
 
         final boolean isMessagePasswordProtected = password != null;
 
         final String senderId = newRandomId();
 
-        final String receiverId = storeMessage(senderId, message, files, password, expiration);
+        final String receiverId = storeMessage(senderId, message, encryptionKey, files, password,
+            expiration);
 
         saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, isMessagePasswordProtected, expiration));
@@ -84,13 +81,10 @@ public class MessageSenderService {
     }
 
     String storeMessage(final String senderId, final String message,
-                        final List<MultipartFile> multipartFiles, final String password,
-                        final Instant expiration) {
+                        final KeyIv encryptionKey, final List<SecretFile> files,
+                        final String password, final Instant expiration) {
 
         Objects.requireNonNull(senderId, "senderId must not be null");
-
-        // Create encryptionKey and initialization vector (IV) to encrypt data
-        final KeyIv encryptionKey = new KeyIv(cryptor.newKey(), cryptor.newIv());
 
         final String receiverId = newRandomId();
 
@@ -103,40 +97,13 @@ public class MessageSenderService {
             hashedPassword,
             encryptKey(MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
             encryptMessage(message, encryptionKey.getKey()),
-            encryptFiles(multipartFiles, encryptionKey, expiration),
+            files,
             expiration
         );
 
         receiverMsgRepository.create(receiverId, receiverMessage);
 
         return receiverId;
-    }
-
-    private List<SecretFile> encryptFiles(final List<MultipartFile> multipartFiles,
-                                          final KeyIv encryptionKey, final Instant expiration) {
-        if (multipartFiles == null) {
-            return Collections.emptyList();
-        }
-
-        return multipartFiles.stream()
-            .map(multipartFile -> encryptFile(multipartFile, encryptionKey, expiration))
-            .collect(Collectors.toList());
-    }
-
-    private SecretFile encryptFile(final MultipartFile multipartFile, final KeyIv encryptionKey,
-                                   final Instant expiration) {
-        try (final InputStream in = multipartFile.getInputStream()) {
-            final byte[] fileIv = cryptor.newIv();
-            final KeyIv fileKey = new KeyIv(encryptionKey.getKey(), fileIv);
-
-            final byte[] encryptedFilename = cryptor.encryptString(
-                multipartFile.getOriginalFilename(), fileKey);
-
-            return fileRepository.storeFile(newRandomId(),
-                new CryptedData(encryptedFilename, fileIv), in, fileKey, expiration);
-        } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private KeyIv encryptKey(final String password, final KeyIv encryptionKey) {
@@ -190,6 +157,22 @@ public class MessageSenderService {
 
         senderMessage.setBurned(Instant.now());
         senderMsgRepository.update(senderMessage.getId(), senderMessage);
+    }
+
+    public SecretFile encryptFile(final String name, final InputStream in,
+                                  final KeyIv encryptionKey, final Instant expiration) {
+
+        final byte[] fileIv = cryptor.newIv();
+        final KeyIv fileKey = new KeyIv(encryptionKey.getKey(), fileIv);
+
+        final byte[] encryptedFilename = cryptor.encryptString(name, fileKey);
+
+        return fileRepository.storeFile(newRandomId(),
+            new CryptedData(encryptedFilename, fileIv), in, fileKey, expiration);
+    }
+
+    public KeyIv newEncryptionKey() {
+        return new KeyIv(cryptor.newKey(), cryptor.newIv());
     }
 
 }

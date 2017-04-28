@@ -16,29 +16,50 @@
 
 package de.siegmar.securetransfer.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import javax.validation.Valid;
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadBase;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.fileupload.util.Streams;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.Errors;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.DataBinder;
+import org.springframework.validation.Validator;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.google.common.base.Strings;
+
+import de.siegmar.securetransfer.config.SecureTransferConfiguration;
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
+import de.siegmar.securetransfer.domain.KeyIv;
+import de.siegmar.securetransfer.domain.SecretFile;
 import de.siegmar.securetransfer.domain.SenderMessage;
 import de.siegmar.securetransfer.service.MessageSenderService;
 
@@ -50,10 +71,16 @@ public class SendController {
     private static final String FORM_MSG_STATUS = "send/message_status";
 
     private final MessageSenderService messageService;
+    private final Validator validator;
+    private final SecureTransferConfiguration config;
 
     @Autowired
-    public SendController(final MessageSenderService messageService) {
+    public SendController(final MessageSenderService messageService,
+                          final @Qualifier("mvcValidator") Validator validator,
+                          final SecureTransferConfiguration config) {
         this.messageService = messageService;
+        this.validator = validator;
+        this.config = config;
     }
 
     @ModelAttribute
@@ -76,28 +103,98 @@ public class SendController {
      * Process the send form.
      */
     @PostMapping
-    public String create(@Valid @ModelAttribute("command") final EncryptMessageCommand cmd,
-                         final Errors errors,
-                         final RedirectAttributes redirectAttributes) {
+    public ModelAndView create(final HttpServletRequest req,
+                               final RedirectAttributes redirectAttributes)
+        throws IOException, FileUploadException {
 
-        // Form submit without files contains one empty file!
-        final List<MultipartFile> files = cmd.getFiles() == null ? null
-            : cmd.getFiles().stream().filter(f -> !f.isEmpty()).collect(Collectors.toList());
+        if (!ServletFileUpload.isMultipartContent(req)) {
+            throw new IllegalStateException("No multipart request!");
+        }
 
-        if (cmd.getMessage() == null && (files == null || files.isEmpty())) {
+        // Create encryptionKey and initialization vector (IV) to encrypt data
+        final KeyIv encryptionKey = messageService.newEncryptionKey();
+
+        final DataBinder binder = initBinder();
+
+        final List<SecretFile> tmpFiles = handleStream(req, encryptionKey, binder);
+
+        final EncryptMessageCommand command = (EncryptMessageCommand) binder.getTarget();
+        final BindingResult errors = binder.getBindingResult();
+
+        if (!errors.hasErrors()
+            && command.getMessage() == null
+            && (tmpFiles == null || tmpFiles.isEmpty())) {
             errors.reject(null, "Neither message nor files submitted");
         }
 
         if (errors.hasErrors()) {
-            return FORM_SEND_MSG;
+            return new ModelAndView(FORM_SEND_MSG, binder.getBindingResult().getModel());
         }
 
-        final String senderId = messageService.storeMessage(cmd.getMessage(), files,
-            cmd.getPassword(), Instant.now().plus(cmd.getExpirationDays(), ChronoUnit.DAYS));
+        final String senderId = messageService.storeMessage(command.getMessage(), tmpFiles,
+            encryptionKey, command.getPassword(),
+            Instant.now().plus(command.getExpirationDays(), ChronoUnit.DAYS));
 
-        redirectAttributes.addFlashAttribute("message", cmd.getMessage());
+        redirectAttributes
+            .addFlashAttribute("messageSent", true)
+            .addFlashAttribute("message", command.getMessage());
 
-        return "redirect:/send/" + senderId;
+        return new ModelAndView("redirect:/send/" + senderId);
+    }
+
+
+    private List<SecretFile> handleStream(final HttpServletRequest req,
+                                          final KeyIv encryptionKey, final DataBinder binder)
+                                              throws FileUploadException, IOException {
+
+        final BindingResult errors = binder.getBindingResult();
+
+        final MutablePropertyValues propertyValues = new MutablePropertyValues();
+        final List<SecretFile> tmpFiles = new ArrayList<>();
+
+        @SuppressWarnings("checkstyle:anoninnerlength")
+        final AbstractMultipartVisitor visitor = new AbstractMultipartVisitor() {
+            private Optional<Integer> expiration = Optional.empty();
+
+            @Override
+            void emitField(final String name, final String value) {
+                propertyValues.addPropertyValue(name, value);
+
+                if ("expirationDays".equals(name)) {
+                    expiration = Optional.of(Integer.valueOf(value));
+                    return;
+                }
+            }
+
+            @Override
+            void emitFile(final String fileName, final InputStream inStream) {
+                final Integer expirationDays = expiration
+                    .orElseThrow(() ->
+                    new IllegalStateException("No expirationDays configured"));
+
+                tmpFiles.add(messageService.encryptFile(fileName, inStream, encryptionKey,
+                    Instant.now().plus(expirationDays, ChronoUnit.DAYS)));
+
+            }
+
+        };
+
+        try {
+            visitor.processRequest(req);
+            binder.bind(propertyValues);
+            binder.validate();
+        } catch (final IllegalStateException ise) {
+            errors.reject(null, ise.getMessage());
+        }
+
+        return tmpFiles;
+    }
+
+    private DataBinder initBinder() {
+        final DataBinder binder = new DataBinder(new EncryptMessageCommand(), "command");
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+        binder.setValidator(validator);
+        return binder;
     }
 
     /**
@@ -139,6 +236,65 @@ public class SendController {
         }
 
         return "redirect:/send/" + id;
+    }
+
+    private abstract class AbstractMultipartVisitor {
+
+        abstract void emitField(String name, String value);
+
+        abstract void emitFile(String fileName, InputStream inStream);
+
+        final void processRequest(final HttpServletRequest req)
+            throws FileUploadException, IOException {
+
+            final ServletFileUpload upload = new ServletFileUpload();
+            upload.setHeaderEncoding("UTF-8");
+            upload.setSizeMax(config.getMaxRequestSize());
+            upload.setFileSizeMax(config.getMaxFileSize());
+
+            final FileItemIterator iter;
+            try {
+                iter = upload.getItemIterator(req);
+            } catch (final FileUploadBase.SizeLimitExceededException e) {
+                throw new IllegalStateException(
+                    String.format("Message (including files) exceeds maximum size of %s",
+                    FileUtils.byteCountToDisplaySize(config.getMaxRequestSize())));
+            }
+
+
+            while (iter.hasNext()) {
+                final FileItemStream item = iter.next();
+                final String name = item.getFieldName();
+
+                try (final InputStream stream = item.openStream()) {
+                    if (item.isFormField()) {
+                        final String propertyValue = Streams.asString(stream, "UTF-8");
+
+                        emitField(name, propertyValue);
+
+                    } else {
+
+                        final String filename = FilenameUtils.getName(item.getName());
+                        if (Strings.isNullOrEmpty(filename)) {
+                            // browser sends dummy file in case no file part is used
+                            continue;
+                        }
+                        try {
+                            emitFile(filename, stream);
+                        } catch (final UncheckedIOException e) {
+                            if (!(e.getCause() instanceof FileUploadBase.FileUploadIOException)) {
+                                throw e;
+                            }
+                            throw new IllegalStateException(
+                                String.format("File %s exceeded size limit of %s", filename,
+                              FileUtils.byteCountToDisplaySize(config.getMaxFileSize())));
+                        }
+                    }
+                }
+            }
+
+        }
+
     }
 
 }

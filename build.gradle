@@ -30,6 +30,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-security')
     compile('org.springframework.boot:spring-boot-starter-thymeleaf')
     compile('org.apache.commons:commons-crypto:1.0.0')
+    compile('commons-fileupload:commons-fileupload:1.3.2')
     compile('com.google.guava:guava:21.0')
     compile('com.fasterxml.jackson.core:jackson-core:2.8.8')
     compile('com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8')
@@ -41,6 +42,8 @@ dependencies {
     testCompile('junit:junit:4.12')
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('org.jsoup:jsoup:1.10.2')
+    testCompile('org.apache.httpcomponents:httpclient:4.5.3')
+    testCompile('org.apache.httpcomponents:httpmime:4.5.3')
 }
 
 processResources {

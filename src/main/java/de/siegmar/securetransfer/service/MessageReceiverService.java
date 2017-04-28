@@ -94,7 +94,9 @@ public class MessageReceiverService {
             decryptEncryptionKey(MoreObjects.firstNonNull(password, DEFAULT_PASSWORD),
                 receiverMessage);
 
-        final List<DecryptedFile> decryptedFiles = receiverMessage.getFiles().stream()
+        final List<DecryptedFile> decryptedFiles = receiverMessage.getFiles() == null
+            ? null
+            : receiverMessage.getFiles().stream()
             .map(f -> decryptFile(f, new KeyIv(encryptionKey, f.getKeyIv().getIv())))
             .collect(Collectors.toList());
 
