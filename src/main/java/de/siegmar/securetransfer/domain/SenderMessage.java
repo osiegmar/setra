@@ -24,22 +24,16 @@ public class SenderMessage extends Message {
     private String receiverId;
     private boolean passwordEncrypted;
     private Instant received;
+    private Instant burned;
 
     public SenderMessage() {
     }
 
     public SenderMessage(final String senderId, final String receiverId,
                          final boolean passwordEncrypted, final Instant expiration) {
-        this(senderId, receiverId, passwordEncrypted, null, expiration);
-    }
-
-    public SenderMessage(final String senderId, final String receiverId,
-                         final boolean passwordEncrypted, final Instant received,
-                         final Instant expiration) {
         super(senderId, expiration);
         this.receiverId = Objects.requireNonNull(receiverId);
         this.passwordEncrypted = passwordEncrypted;
-        this.received = received;
     }
 
     public String getReceiverId() {
@@ -65,4 +59,13 @@ public class SenderMessage extends Message {
     public void setReceived(final Instant received) {
         this.received = received;
     }
+
+    public Instant getBurned() {
+        return burned;
+    }
+
+    public void setBurned(final Instant burned) {
+        this.burned = burned;
+    }
+
 }

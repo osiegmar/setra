@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 import com.google.common.hash.Hashing;
 
 import de.siegmar.securetransfer.component.Cryptor;
@@ -179,10 +180,16 @@ public class MessageSenderService {
             .hash().toString();
     }
 
-    public void burnSenderMessage(final String senderId) {
-        if (!senderMsgRepository.delete(senderId)) {
+    public void burnSenderMessage(final SenderMessage senderMessage) {
+        Preconditions.checkArgument(senderMessage.getReceived() == null,
+            "Message already received");
+
+        if (!receiverMsgRepository.delete(senderMessage.getReceiverId())) {
             throw new MessageNotFoundException();
         }
+
+        senderMessage.setBurned(Instant.now());
+        senderMsgRepository.update(senderMessage.getId(), senderMessage);
     }
 
 }

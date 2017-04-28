@@ -14,11 +14,23 @@
         <h1>Your sent message</h1>
     </div>
 
-    <div th:unless="${senderMessage.received}">
-        <div class="alert alert-success" role="alert">
-            Message successfully sent!
-        </div>
+    <div th:if="${message}" class="alert alert-success" role="alert">
+        Message successfully sent!
+    </div>
 
+    <div th:if="${messageBurned}" class="alert alert-success" role="alert">
+        Your message has been successfully burned.
+    </div>
+
+    <div th:if="${alreadyReceived}" class="alert alert-danger" role="alert">
+        Your message has already been received.
+    </div>
+
+    <div th:if="${alreadyBurned}" class="alert alert-danger" role="alert">
+        Your message has already been burned.
+    </div>
+
+    <div th:if="${senderMessage.received == null && senderMessage.burned == null}">
         <div class="input-group">
             <input id="secret-url" type="text" class="form-control input-sm" th:value="${receiveUrl}" readonly>
 
@@ -47,12 +59,20 @@
     <div class="panel panel-info" th:if="${senderMessage.received}">
         <div class="panel-heading">Message received</div>
         <div class="panel-body">
-            Your message has been received and burned at
+            Your message has been received at
             <span th:text="${senderMessage.received}"></span>
         </div>
     </div>
 
-    <div th:unless="${senderMessage.received}" style="margin-top: 50px">
+    <div class="panel panel-info" th:if="${senderMessage.burned}">
+        <div class="panel-heading">Message burned</div>
+        <div class="panel-body">
+            Your message has been burned at
+            <span th:text="${senderMessage.burned}"></span>
+        </div>
+    </div>
+
+    <div th:if="${senderMessage.received == null && senderMessage.burned == null}" style="margin-top: 50px">
         <p>Changed your mind and want to burn the message yourself?</p>
         <form th:action="@{/send/{id}(id=${senderMessage.id})}" method="post">
 
