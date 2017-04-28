@@ -48,7 +48,6 @@ public class SendController {
 
     private static final String FORM_SEND_MSG = "send/send_form";
     private static final String FORM_MSG_STATUS = "send/message_status";
-    private static final String FORM_MSG_BURNED = "send/message_burned";
 
     private final MessageSenderService messageService;
 
@@ -125,9 +124,21 @@ public class SendController {
      * Handle burn request sent by the sender.
      */
     @DeleteMapping("/{id:[a-f0-9]{64}}")
-    public String burn(@PathVariable("id") final String id) {
-        messageService.burnSenderMessage(id);
-        return FORM_MSG_BURNED;
+    public String burn(@PathVariable("id") final String id,
+                       final RedirectAttributes redirectAttributes) {
+
+        final SenderMessage senderMessage = messageService.getSenderMessage(id);
+
+        if (senderMessage.getReceived() != null) {
+            redirectAttributes.addFlashAttribute("alreadyReceived", true);
+        } else if (senderMessage.getBurned() != null) {
+            redirectAttributes.addFlashAttribute("alreadyBurned", true);
+        } else {
+            messageService.burnSenderMessage(senderMessage);
+            redirectAttributes.addFlashAttribute("messageBurned", true);
+        }
+
+        return "redirect:/send/" + id;
     }
 
 }
