@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import de.siegmar.securetransfer.component.Cryptor;
 import de.siegmar.securetransfer.domain.DecryptedMessage;
+import de.siegmar.securetransfer.domain.KeyIv;
 import de.siegmar.securetransfer.domain.ReceiverMessage;
 import de.siegmar.securetransfer.domain.SenderMessage;
 import de.siegmar.securetransfer.repository.FileRepository;
@@ -66,8 +67,9 @@ public class MessageServiceTest {
         final String message = "secure message";
         final String senderId = messageService.newRandomId();
         final Instant expiration = Instant.now().plusSeconds(60);
+        final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId =
-            messageService.storeMessage(senderId, message, null, null, expiration);
+            messageService.storeMessage(senderId, message, encryptionKey, null, null, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, false, expiration));
 
@@ -99,8 +101,9 @@ public class MessageServiceTest {
         final String password = "key";
         final String senderId = messageService.newRandomId();
         final Instant expiration = Instant.now().plusSeconds(60);
-        final String receiverId =
-            messageService.storeMessage(senderId, message, null, password, expiration);
+        final KeyIv encryptionKey = messageService.newEncryptionKey();
+        final String receiverId = messageService.storeMessage(senderId, message, encryptionKey,
+            null, password, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, true, expiration));
 
@@ -140,8 +143,9 @@ public class MessageServiceTest {
         final String password = "key";
         final String senderId = messageService.newRandomId();
         final Instant expiration = Instant.now().plusSeconds(60);
-        final String receiverId =
-            messageService.storeMessage(senderId, message, null, password, expiration);
+        final KeyIv encryptionKey = messageService.newEncryptionKey();
+        final String receiverId = messageService.storeMessage(senderId, message, encryptionKey,
+            null, password, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, true, expiration));
 

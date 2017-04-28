@@ -21,7 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.fileUpload;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -33,7 +32,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.Test;
@@ -41,10 +43,13 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import com.google.common.io.ByteStreams;
 
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
 import de.siegmar.securetransfer.domain.DecryptedFile;
@@ -77,7 +82,13 @@ public class MvcTest {
     @Test
     public void invalidFormSubmit() throws Exception {
         // message missing
-        mockMvc.perform(post("/send"))
+        final String boundary = "------TestBoundary" + UUID.randomUUID();
+        final MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+            .setBoundary(boundary);
+
+        mockMvc.perform(post("/send")
+            .content(ByteStreams.toByteArray(builder.build().getContent()))
+            .contentType(MediaType.MULTIPART_FORM_DATA_VALUE + "; boundary=" + boundary))
             .andExpect(status().isOk())
             .andExpect(content().contentType("text/html;charset=UTF-8"))
             .andExpect(model().hasErrors());
@@ -87,9 +98,16 @@ public class MvcTest {
     public void messageWithoutFileWithoutPassword() throws Exception {
         final String messageToSend = "my secret message";
 
+        final String boundary = "------TestBoundary" + UUID.randomUUID();
+        final MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+            .setBoundary(boundary)
+            .addTextBody("expirationDays", "1")
+            .addTextBody("message", messageToSend);
+
         // Create new message and expect redirect with flash message after store
         final MvcResult createMessageResult = mockMvc.perform(post("/send")
-            .param("message", messageToSend))
+            .content(ByteStreams.toByteArray(builder.build().getContent()))
+            .contentType(MediaType.MULTIPART_FORM_DATA_VALUE + "; boundary=" + boundary))
             .andExpect(status().isFound())
             .andExpect(redirectedUrlPattern("/send/**"))
             .andExpect(flash().attribute("message", messageToSend))
@@ -173,11 +191,19 @@ public class MvcTest {
         final String password = "top secret password";
         final String fileContent = "test file content";
 
+        final String boundary = "------TestBoundary" + UUID.randomUUID();
+        final MultipartEntityBuilder builder = MultipartEntityBuilder.create()
+            .setBoundary(boundary)
+            .addTextBody("expirationDays", "1")
+            .addTextBody("message", messageToSend)
+            .addTextBody("password", password)
+            .addBinaryBody("files", fileContent.getBytes(StandardCharsets.UTF_8),
+                ContentType.APPLICATION_OCTET_STREAM, "test.txt");
+
         // Create new message and expect redirect with flash message after store
-        final MvcResult createMessageResult = mockMvc.perform(fileUpload("/send")
-            .file("files", fileContent.getBytes(StandardCharsets.UTF_8))
-            .param("message", messageToSend)
-            .param("password", password))
+        final MvcResult createMessageResult = mockMvc.perform(post("/send")
+            .content(ByteStreams.toByteArray(builder.build().getContent()))
+            .contentType(MediaType.MULTIPART_FORM_DATA_VALUE + "; boundary=" + boundary))
             .andExpect(status().isFound())
             .andExpect(redirectedUrlPattern("/send/**"))
             .andExpect(flash().attribute("message", messageToSend))
