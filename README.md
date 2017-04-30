@@ -44,7 +44,7 @@ And a NGINX proxy configuration:
 location / {
     proxy_pass http://localhost:8500/;
 
-    # Keep this value in sync with SPRING_HTTP_MULTIPART_MAX_REQUEST_SIZE
+    # Keep this value in sync with SECURETRANSFER_MAX_REQUEST_SIZE
     client_max_body_size 2048M;
 
     proxy_buffering off;
