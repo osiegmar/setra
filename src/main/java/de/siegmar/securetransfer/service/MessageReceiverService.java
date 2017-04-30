@@ -126,6 +126,10 @@ public class MessageReceiverService {
         if (decryptAttempts > 2) {
             // burn if too many failed attempts
             receiverMsgRepository.delete(receiverId);
+
+            // inform the sender about invalidation
+            updateSenderMessageInvalidated(receiverMessage.getSenderId());
+
             throw new MessageNotFoundException();
         }
 
@@ -151,6 +155,14 @@ public class MessageReceiverService {
         final SenderMessage senderMessage = senderMsgRepository.read(senderId);
         if (senderMessage.getReceived() == null) {
             senderMessage.setReceived(Instant.now());
+            senderMsgRepository.update(senderId, senderMessage);
+        }
+    }
+
+    private void updateSenderMessageInvalidated(final String senderId) {
+        final SenderMessage senderMessage = senderMsgRepository.read(senderId);
+        if (senderMessage.getInvalidated() == null) {
+            senderMessage.setInvalidated(Instant.now());
             senderMsgRepository.update(senderId, senderMessage);
         }
     }
