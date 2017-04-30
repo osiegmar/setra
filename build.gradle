@@ -14,7 +14,7 @@ apply plugin: 'findbugs'
 
 group = 'de.siegmar'
 archivesBaseName = 'securetransfer'
-version = '1.0.0-SNAPSHOT'
+version = '1.0.0'
 
 sourceCompatibility = 1.8
 
