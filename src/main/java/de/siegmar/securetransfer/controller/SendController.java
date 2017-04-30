@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalInt;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItemIterator;
@@ -145,7 +145,7 @@ public class SendController {
 
     private List<SecretFile> handleStream(final HttpServletRequest req,
                                           final KeyIv encryptionKey, final DataBinder binder)
-                                              throws FileUploadException, IOException {
+        throws FileUploadException, IOException {
 
         final BindingResult errors = binder.getBindingResult();
 
@@ -154,15 +154,14 @@ public class SendController {
 
         @SuppressWarnings("checkstyle:anoninnerlength")
         final AbstractMultipartVisitor visitor = new AbstractMultipartVisitor() {
-            private Optional<Integer> expiration = Optional.empty();
+            private OptionalInt expiration = OptionalInt.empty();
 
             @Override
             void emitField(final String name, final String value) {
                 propertyValues.addPropertyValue(name, value);
 
                 if ("expirationDays".equals(name)) {
-                    expiration = Optional.of(Integer.valueOf(value));
-                    return;
+                    expiration = OptionalInt.of(Integer.parseInt(value));
                 }
             }
 
@@ -170,7 +169,7 @@ public class SendController {
             void emitFile(final String fileName, final InputStream inStream) {
                 final Integer expirationDays = expiration
                     .orElseThrow(() ->
-                    new IllegalStateException("No expirationDays configured"));
+                        new IllegalStateException("No expirationDays configured"));
 
                 tmpFiles.add(messageService.encryptFile(fileName, inStream, encryptionKey,
                     Instant.now().plus(expirationDays, ChronoUnit.DAYS)));
@@ -258,7 +257,7 @@ public class SendController {
             } catch (final FileUploadBase.SizeLimitExceededException e) {
                 throw new IllegalStateException(
                     String.format("Message (including files) exceeds maximum size of %s",
-                    FileUtils.byteCountToDisplaySize(config.getMaxRequestSize())));
+                        FileUtils.byteCountToDisplaySize(config.getMaxRequestSize())));
             }
 
 
@@ -287,7 +286,7 @@ public class SendController {
                             }
                             throw new IllegalStateException(
                                 String.format("File %s exceeded size limit of %s", filename,
-                              FileUtils.byteCountToDisplaySize(config.getMaxFileSize())));
+                                    FileUtils.byteCountToDisplaySize(config.getMaxFileSize())));
                         }
                     }
                 }
