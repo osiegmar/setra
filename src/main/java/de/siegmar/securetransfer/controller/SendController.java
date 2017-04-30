@@ -143,6 +143,13 @@ public class SendController {
     }
 
 
+    private DataBinder initBinder() {
+        final DataBinder binder = new DataBinder(new EncryptMessageCommand(), "command");
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+        binder.setValidator(validator);
+        return binder;
+    }
+
     private List<SecretFile> handleStream(final HttpServletRequest req,
                                           final KeyIv encryptionKey, final DataBinder binder)
         throws FileUploadException, IOException {
@@ -154,6 +161,7 @@ public class SendController {
 
         @SuppressWarnings("checkstyle:anoninnerlength")
         final AbstractMultipartVisitor visitor = new AbstractMultipartVisitor() {
+
             private OptionalInt expiration = OptionalInt.empty();
 
             @Override
@@ -168,12 +176,10 @@ public class SendController {
             @Override
             void emitFile(final String fileName, final InputStream inStream) {
                 final Integer expirationDays = expiration
-                    .orElseThrow(() ->
-                        new IllegalStateException("No expirationDays configured"));
+                    .orElseThrow(() -> new IllegalStateException("No expirationDays configured"));
 
                 tmpFiles.add(messageService.encryptFile(fileName, inStream, encryptionKey,
                     Instant.now().plus(expirationDays, ChronoUnit.DAYS)));
-
             }
 
         };
@@ -187,13 +193,6 @@ public class SendController {
         }
 
         return tmpFiles;
-    }
-
-    private DataBinder initBinder() {
-        final DataBinder binder = new DataBinder(new EncryptMessageCommand(), "command");
-        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
-        binder.setValidator(validator);
-        return binder;
     }
 
     /**
@@ -229,6 +228,8 @@ public class SendController {
             redirectAttributes.addFlashAttribute("alreadyReceived", true);
         } else if (senderMessage.getBurned() != null) {
             redirectAttributes.addFlashAttribute("alreadyBurned", true);
+        } else if (senderMessage.getInvalidated() != null) {
+            redirectAttributes.addFlashAttribute("alreadyInvalidated", true);
         } else {
             messageService.burnSenderMessage(senderMessage);
             redirectAttributes.addFlashAttribute("messageBurned", true);

@@ -30,7 +30,11 @@
         Your message has already been burned.
     </div>
 
-    <div th:if="${senderMessage.received == null && senderMessage.burned == null}">
+    <div th:if="${alreadyInvalidated}" class="alert alert-danger" role="alert">
+        Your message has already been invalidated (too many wrong password attempts).
+    </div>
+
+    <div th:if="${senderMessage.received == null && senderMessage.burned == null && senderMessage.invalidated == null}">
         <div class="input-group">
             <input id="secret-url" type="text" class="form-control input-sm" th:value="${receiveUrl}" readonly>
 
@@ -72,7 +76,16 @@
         </div>
     </div>
 
-    <div th:if="${senderMessage.received == null && senderMessage.burned == null}" style="margin-top: 50px">
+    <div class="panel panel-warning" th:if="${senderMessage.invalidated}">
+        <div class="panel-heading">Message invalidated</div>
+        <div class="panel-body">
+            Your message has been invalidated at
+            <span th:text="${senderMessage.invalidated}"></span>
+            (too many invalid password attempts)
+        </div>
+    </div>
+
+    <div th:if="${senderMessage.received == null && senderMessage.burned == null && senderMessage.invalidated == null}" style="margin-top: 50px">
         <p>Changed your mind and want to burn the message yourself?</p>
         <form th:action="@{/send/{id}(id=${senderMessage.id})}" method="post">
 

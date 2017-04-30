@@ -25,6 +25,7 @@ public class SenderMessage extends Message {
     private boolean passwordEncrypted;
     private Instant received;
     private Instant burned;
+    private Instant invalidated;
 
     public SenderMessage() {
     }
@@ -66,6 +67,14 @@ public class SenderMessage extends Message {
 
     public void setBurned(final Instant burned) {
         this.burned = burned;
+    }
+
+    public Instant getInvalidated() {
+        return invalidated;
+    }
+
+    public void setInvalidated(final Instant invalidated) {
+        this.invalidated = invalidated;
     }
 
 }
