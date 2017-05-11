@@ -109,21 +109,24 @@ public class MessageSenderService {
     }
 
     /**
+     * Encrypt the key used for message+file encryption with
+     * <ul>
+     *  <li> secret value on link
+     *  <li> the optional user-supplied password
+     * </ul>
      *
-     * @param linkSecret secret shared with receiver using the link - not stored in database
      */
     private KeyIv encryptKey(
         final byte[] linkSecret,
         final String password, final KeyIv encryptionKey) {
-        final byte[] saltedPasswordHash = cryptor.keyFromSaltedPassword(password);
+        Preconditions.checkNotNull(linkSecret);
+        Preconditions.checkNotNull(password);
+        final byte[] saltedSecretHash =
+            cryptor.keyFromSaltedPasswordAndSecret(password, linkSecret);
+        final byte[] encryptedKey = cryptor.encrypt(encryptionKey.getKey(),
+            new KeyIv(saltedSecretHash, encryptionKey.getIv()));
 
-        final byte[] encryptedKeyRound1 = cryptor.encrypt(encryptionKey.getKey(),
-            new KeyIv(saltedPasswordHash, encryptionKey.getIv()));
-
-        final byte[] encryptedKeyRound2 = cryptor.encrypt(encryptedKeyRound1,
-            new KeyIv(linkSecret, encryptionKey.getIv()));
-
-        return new KeyIv(encryptedKeyRound2, encryptionKey.getIv());
+        return new KeyIv(encryptedKey, encryptionKey.getIv());
     }
 
     private CryptedData encryptMessage(final String message, final byte[] encryptionKey) {
@@ -150,7 +153,7 @@ public class MessageSenderService {
         return senderMessage;
     }
 
-    String newRandomId() {
+    public String newRandomId() {
         final UUID uuid = UUID.randomUUID();
         return Hashing.sha256().newHasher()
             .putLong(System.nanoTime())

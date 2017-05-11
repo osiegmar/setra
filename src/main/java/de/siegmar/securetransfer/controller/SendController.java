@@ -39,7 +39,6 @@ import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
-import org.springframework.security.crypto.codec.Hex;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -58,6 +57,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
 
 import de.siegmar.securetransfer.config.SecureTransferConfiguration;
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
@@ -118,7 +118,7 @@ public class SendController {
         final KeyIv encryptionKey = messageService.newEncryptionKey();
 
         // secret shared with receiver using the link - not stored in database
-        final byte[] linkSecret = messageService.newEncryptionKey().getKey(); // FIXME
+        final String linkSecret = messageService.newRandomId();
 
         final DataBinder binder = initBinder();
 
@@ -138,21 +138,14 @@ public class SendController {
         }
 
         final String senderId = messageService.storeMessage(command.getMessage(), tmpFiles,
-            encryptionKey, linkSecret, command.getPassword(),
+            encryptionKey, HashCode.fromString(linkSecret).asBytes(), command.getPassword(),
             Instant.now().plus(command.getExpirationDays(), ChronoUnit.DAYS));
 
         redirectAttributes
             .addFlashAttribute("messageSent", true)
             .addFlashAttribute("message", command.getMessage());
 
-        // FIXME
-        System.out.println("senderId="+senderId);
-
-        final String linkSecredString = new String(Hex.encode(linkSecret));
-
-        System.out.println("linkSecret="+new String(linkSecredString));
-
-        return new ModelAndView("redirect:/send/" + senderId + "?linkSecret="+linkSecredString);
+        return new ModelAndView("redirect:/send/" + senderId + "?linkSecret="+linkSecret);
     }
 
 

@@ -24,7 +24,6 @@ import javax.validation.Valid;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -75,19 +74,15 @@ public class ReceiveController {
         final Model model) {
         final boolean isPasswordProtected = messageService.isMessagePasswordProtected(id);
 
-        // FIXME
-        System.out.println("receive url with linkSecret=" +  linkSecret);
-
+        model.addAttribute("linkSecret", linkSecret);
 
         if (isPasswordProtected) {
             model
                 .addAttribute("id", id)
-                .addAttribute("linkSecret", linkSecret)
                 .addAttribute("command", new DecryptMessageCommand());
             return FORM_ASK_PASSWORD;
         }
 
-        model.addAttribute("linkSecret", linkSecret);
         return FORM_CONFIRM;
     }
 
@@ -95,13 +90,11 @@ public class ReceiveController {
      * Receive non-password protected message.
      */
     @GetMapping("/confirm/{id:[a-f0-9]{64}}")
-    public String confirm(@PathVariable("id") final String id,
-        @ModelAttribute("linkSecret") final String linkSecret,
+    public String confirm(
+            @PathVariable("id") final String id,
+            @ModelAttribute("linkSecret") final String linkSecret,
             final Model model,
             final HttpSession session) {
-
-        // FIXME
-        System.out.println("confirm with linkSecret=" +  linkSecret);
 
         prepareMessage(id, linkSecret, null, model, session);
 
