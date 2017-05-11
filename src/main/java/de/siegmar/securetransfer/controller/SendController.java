@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItemIterator;
@@ -38,6 +39,7 @@ import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
+import org.springframework.security.crypto.codec.Hex;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -49,6 +51,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -114,6 +117,9 @@ public class SendController {
         // Create encryptionKey and initialization vector (IV) to encrypt data
         final KeyIv encryptionKey = messageService.newEncryptionKey();
 
+        // secret shared with receiver using the link - not stored in database
+        final byte[] linkSecret = messageService.newEncryptionKey().getKey(); // FIXME
+
         final DataBinder binder = initBinder();
 
         final List<SecretFile> tmpFiles = handleStream(req, encryptionKey, binder);
@@ -132,14 +138,21 @@ public class SendController {
         }
 
         final String senderId = messageService.storeMessage(command.getMessage(), tmpFiles,
-            encryptionKey, command.getPassword(),
+            encryptionKey, linkSecret, command.getPassword(),
             Instant.now().plus(command.getExpirationDays(), ChronoUnit.DAYS));
 
         redirectAttributes
             .addFlashAttribute("messageSent", true)
             .addFlashAttribute("message", command.getMessage());
 
-        return new ModelAndView("redirect:/send/" + senderId);
+        // FIXME
+        System.out.println("senderId="+senderId);
+
+        final String linkSecredString = new String(Hex.encode(linkSecret));
+
+        System.out.println("linkSecret="+new String(linkSecredString));
+
+        return new ModelAndView("redirect:/send/" + senderId + "?linkSecret="+linkSecredString);
     }
 
 
@@ -200,6 +213,7 @@ public class SendController {
      */
     @GetMapping("/{id:[a-f0-9]{64}}")
     public String created(@PathVariable("id") final String id,
+        @RequestParam("linkSecret") final String linkSecret,
                           final Model model,
                           final UriComponentsBuilder uriComponentsBuilder) {
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
@@ -207,6 +221,7 @@ public class SendController {
         final String receiveUrl = MvcUriComponentsBuilder
             .fromMappingName(uriComponentsBuilder, "RC#receive")
             .arg(0, senderMessage.getReceiverId())
+            .arg(1, linkSecret)
             .build();
 
         model

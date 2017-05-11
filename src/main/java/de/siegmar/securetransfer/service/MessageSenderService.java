@@ -64,14 +64,16 @@ public class MessageSenderService {
      * Stores a new secure message and return the senderId.
      */
     public String storeMessage(final String message, final List<SecretFile> files,
-                               final KeyIv encryptionKey, final String password,
+                               final KeyIv encryptionKey,
+                               final byte[] linkSecret,
+                               final String password,
                                final Instant expiration) {
 
         final boolean isMessagePasswordProtected = password != null;
 
         final String senderId = newRandomId();
 
-        final String receiverId = storeMessage(senderId, message, encryptionKey, files, password,
+        final String receiverId = storeMessage(senderId, message, encryptionKey, files, linkSecret, password,
             expiration);
 
         saveSenderMessage(senderId,
@@ -82,7 +84,7 @@ public class MessageSenderService {
 
     String storeMessage(final String senderId, final String message,
                         final KeyIv encryptionKey, final List<SecretFile> files,
-                        final String password, final Instant expiration) {
+                        final byte[] linkSecret, final String password, final Instant expiration) {
 
         Objects.requireNonNull(senderId, "senderId must not be null");
 
@@ -95,7 +97,7 @@ public class MessageSenderService {
             receiverId,
             senderId,
             hashedPassword,
-            encryptKey(MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
+            encryptKey(linkSecret, MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
             encryptMessage(message, encryptionKey.getKey()),
             files,
             expiration
@@ -106,12 +108,22 @@ public class MessageSenderService {
         return receiverId;
     }
 
-    private KeyIv encryptKey(final String password, final KeyIv encryptionKey) {
+    /**
+     *
+     * @param linkSecret secret shared with receiver using the link - not stored in database
+     */
+    private KeyIv encryptKey(
+        final byte[] linkSecret,
+        final String password, final KeyIv encryptionKey) {
         final byte[] saltedPasswordHash = cryptor.keyFromSaltedPassword(password);
-        final byte[] encryptedKey = cryptor.encrypt(encryptionKey.getKey(),
+
+        final byte[] encryptedKeyRound1 = cryptor.encrypt(encryptionKey.getKey(),
             new KeyIv(saltedPasswordHash, encryptionKey.getIv()));
 
-        return new KeyIv(encryptedKey, encryptionKey.getIv());
+        final byte[] encryptedKeyRound2 = cryptor.encrypt(encryptedKeyRound1,
+            new KeyIv(linkSecret, encryptionKey.getIv()));
+
+        return new KeyIv(encryptedKeyRound2, encryptionKey.getIv());
     }
 
     private CryptedData encryptMessage(final String message, final byte[] encryptionKey) {

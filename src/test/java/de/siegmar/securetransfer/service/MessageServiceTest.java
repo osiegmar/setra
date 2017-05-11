@@ -39,8 +39,8 @@ import de.siegmar.securetransfer.repository.memory.MemoryMessageRepository;
 
 public class MessageServiceTest {
 
-    private MessageSenderService messageService;
-    private MessageReceiverService messageReceiverService;
+    private final MessageSenderService messageService;
+    private final MessageReceiverService messageReceiverService;
 
     public MessageServiceTest() throws IOException {
         final Cryptor cryptor = new Cryptor(new byte[]{34, 23, 56, 23, 68, 34, 23, 54});
@@ -66,10 +66,11 @@ public class MessageServiceTest {
         // Store without password
         final String message = "secure message";
         final String senderId = messageService.newRandomId();
+        final byte[] linkSecret = messageService.newEncryptionKey().getKey(); // FIXME
         final Instant expiration = Instant.now().plusSeconds(60);
         final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId =
-            messageService.storeMessage(senderId, message, encryptionKey, null, null, expiration);
+            messageService.storeMessage(senderId, message, encryptionKey, null, linkSecret, null, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, false, expiration));
 
@@ -78,12 +79,12 @@ public class MessageServiceTest {
 
         // Retrieve
         final DecryptedMessage retrievedMessage =
-            messageReceiverService.decryptAndBurnMessage(receiverId, null);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
         assertEquals(message, retrievedMessage.getMessage());
 
         // No retrieval possible anymore
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, null);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
             fail("MessageNotFoundException expected");
         } catch (final MessageNotFoundException e) {
             // expected
@@ -98,12 +99,13 @@ public class MessageServiceTest {
     public void withPassword() {
         // Store without password
         final String message = "secure message";
+        final byte[] linkSecret = messageService.newEncryptionKey().getKey();
         final String password = "key";
         final String senderId = messageService.newRandomId();
         final Instant expiration = Instant.now().plusSeconds(60);
         final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId = messageService.storeMessage(senderId, message, encryptionKey,
-            null, password, expiration);
+            null, linkSecret, password, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, true, expiration));
 
@@ -112,7 +114,7 @@ public class MessageServiceTest {
 
         // Message can't be retrieved without password
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, null);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
             fail("IllegalStateException expected");
         } catch (final IllegalStateException e) {
             // expected
@@ -120,12 +122,12 @@ public class MessageServiceTest {
 
         // Retrieve
         final DecryptedMessage retrievedMessage =
-            messageReceiverService.decryptAndBurnMessage(receiverId, password);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, password);
         assertEquals(message, retrievedMessage.getMessage());
 
         // No retrieval possible anymore
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, password);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, password);
             fail("MessageNotFoundException expected");
         } catch (final MessageNotFoundException e) {
             // expected
@@ -140,12 +142,13 @@ public class MessageServiceTest {
     public void tooManyAttempts() {
         // Store without password
         final String message = "secure message";
+        final byte[] linkSecret = messageService.newEncryptionKey().getKey();
         final String password = "key";
         final String senderId = messageService.newRandomId();
         final Instant expiration = Instant.now().plusSeconds(60);
         final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId = messageService.storeMessage(senderId, message, encryptionKey,
-            null, password, expiration);
+            null, linkSecret, password, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, true, expiration));
 
@@ -154,7 +157,7 @@ public class MessageServiceTest {
 
         // Message can't be retrieved without password
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, "wrong");
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, "wrong");
             fail("IllegalStateException expected");
         } catch (final IllegalStateException e) {
             // expected
@@ -162,7 +165,7 @@ public class MessageServiceTest {
 
         // Message can't be retrieved without password
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, "wrong");
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, "wrong");
             fail("IllegalStateException expected");
         } catch (final IllegalStateException e) {
             // expected
@@ -170,7 +173,7 @@ public class MessageServiceTest {
 
         // Message can't be retrieved without password
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, "wrong");
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, "wrong");
             fail("MessageNotFoundException expected");
         } catch (final MessageNotFoundException e) {
             // expected
