@@ -22,8 +22,6 @@ import java.nio.charset.StandardCharsets;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -40,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.google.common.hash.HashCode;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 
@@ -108,7 +107,7 @@ public class ReceiveController {
 
         final DecryptedMessage decryptedMessage =
             messageService.decryptAndBurnMessage(id,
-                stringToByteArray(linkSecret)
+                HashCode.fromString(linkSecret).asBytes()
                 , password);
 
         model.addAttribute("decryptedMessage", decryptedMessage);
@@ -116,16 +115,6 @@ public class ReceiveController {
         // store iv to session to prevent download link "sharing"
         decryptedMessage.getFiles().forEach(f ->
             session.setAttribute(buildSessionAttr(f.getId()), f.getKeyIv().getIv()));
-    }
-
-    private byte[] stringToByteArray(final String string) {
-        // TODO
-        System.out.println("converting string="+string);
-        try {
-            return Hex.decodeHex(string.toCharArray());
-        } catch (final DecoderException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private String buildSessionAttr(final String fileId) {

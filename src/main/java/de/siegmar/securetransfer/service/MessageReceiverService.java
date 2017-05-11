@@ -28,6 +28,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 
 import de.siegmar.securetransfer.component.Cryptor;
 import de.siegmar.securetransfer.domain.CryptedData;
@@ -141,14 +142,16 @@ public class MessageReceiverService {
     private byte[] decryptEncryptionKey(
         final byte[] linkSecret,
         final String password, final ReceiverMessage message) {
-        final byte[] saltedPasswordHash = cryptor.keyFromSaltedPassword(password);
+
+        Preconditions.checkNotNull(linkSecret);
+        Preconditions.checkNotNull(password);
+        final byte[] saltedSecretHash =
+            cryptor.keyFromSaltedPasswordAndSecret(password, linkSecret);
+
         final byte[] key = message.getKeyIv().getKey();
         final byte[] iv = message.getKeyIv().getIv();
 
-        final byte[] round1 = cryptor.decrypt(key, new KeyIv(linkSecret, iv));
-        final byte[] round2 = cryptor.decrypt(round1, new KeyIv(saltedPasswordHash, iv));
-
-        return round2;
+        return cryptor.decrypt(key, new KeyIv(saltedSecretHash, iv));
     }
 
     private String decryptMessage(final CryptedData message, final byte[] encryptionKey) {

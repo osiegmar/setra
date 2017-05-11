@@ -28,6 +28,8 @@ import java.time.Instant;
 
 import org.junit.Test;
 
+import com.google.common.hash.HashCode;
+
 import de.siegmar.securetransfer.component.Cryptor;
 import de.siegmar.securetransfer.domain.DecryptedMessage;
 import de.siegmar.securetransfer.domain.KeyIv;
@@ -66,7 +68,7 @@ public class MessageServiceTest {
         // Store without password
         final String message = "secure message";
         final String senderId = messageService.newRandomId();
-        final byte[] linkSecret = messageService.newEncryptionKey().getKey(); // FIXME
+        final byte[] linkSecret = HashCode.fromString(messageService.newRandomId()).asBytes();
         final Instant expiration = Instant.now().plusSeconds(60);
         final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId =
