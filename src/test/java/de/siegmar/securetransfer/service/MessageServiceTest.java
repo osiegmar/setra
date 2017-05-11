@@ -68,11 +68,14 @@ public class MessageServiceTest {
         // Store without password
         final String message = "secure message";
         final String senderId = messageService.newRandomId();
+        final String noPassword = null;
         final byte[] linkSecret = HashCode.fromString(messageService.newRandomId()).asBytes();
         final Instant expiration = Instant.now().plusSeconds(60);
         final KeyIv encryptionKey = messageService.newEncryptionKey();
         final String receiverId =
-            messageService.storeMessage(senderId, message, encryptionKey, null, linkSecret, null, expiration);
+            messageService.storeMessage(
+                senderId, message, encryptionKey, null,
+                linkSecret, noPassword, expiration);
         messageService.saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, false, expiration));
 
@@ -81,12 +84,12 @@ public class MessageServiceTest {
 
         // Retrieve
         final DecryptedMessage retrievedMessage =
-            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, noPassword);
         assertEquals(message, retrievedMessage.getMessage());
 
         // No retrieval possible anymore
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
+            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, noPassword);
             fail("MessageNotFoundException expected");
         } catch (final MessageNotFoundException e) {
             // expected
@@ -116,7 +119,8 @@ public class MessageServiceTest {
 
         // Message can't be retrieved without password
         try {
-            messageReceiverService.decryptAndBurnMessage(receiverId, linkSecret, null);
+            messageReceiverService.decryptAndBurnMessage(
+                receiverId, linkSecret, null/*no password*/);
             fail("IllegalStateException expected");
         } catch (final IllegalStateException e) {
             // expected

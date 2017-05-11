@@ -73,8 +73,9 @@ public class MessageSenderService {
 
         final String senderId = newRandomId();
 
-        final String receiverId = storeMessage(senderId, message, encryptionKey, files, linkSecret, password,
-            expiration);
+        final String receiverId = storeMessage(
+            senderId, message, encryptionKey, files,
+            linkSecret, password, expiration);
 
         saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, isMessagePasswordProtected, expiration));
@@ -97,7 +98,8 @@ public class MessageSenderService {
             receiverId,
             senderId,
             hashedPassword,
-            encryptKey(linkSecret, MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
+            encryptKey(linkSecret,
+                MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
             encryptMessage(message, encryptionKey.getKey()),
             files,
             expiration
@@ -112,7 +114,7 @@ public class MessageSenderService {
      * Encrypt the key used for message+file encryption with
      * <ul>
      *  <li> secret value on link
-     *  <li> the optional user-supplied password
+     *  <li> the optional user-supplied password.
      * </ul>
      *
      */

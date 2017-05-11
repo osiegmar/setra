@@ -78,7 +78,8 @@ public class MessageReceiverService {
         return receiverMessage;
     }
 
-    public DecryptedMessage decryptAndBurnMessage(final String receiverId, final byte[] linkSecret, final String password) {
+    public DecryptedMessage decryptAndBurnMessage(
+        final String receiverId, final byte[] linkSecret, final String password) {
         final ReceiverMessage receiverMessage = getReceiverMessage(receiverId);
 
         if (password != null) {

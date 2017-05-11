@@ -107,8 +107,7 @@ public class ReceiveController {
 
         final DecryptedMessage decryptedMessage =
             messageService.decryptAndBurnMessage(id,
-                HashCode.fromString(linkSecret).asBytes()
-                , password);
+                HashCode.fromString(linkSecret).asBytes(), password);
 
         model.addAttribute("decryptedMessage", decryptedMessage);
 

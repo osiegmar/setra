@@ -49,6 +49,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
 
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
@@ -137,9 +138,8 @@ public class MvcTest {
 
         assertNotNull(receiveUrl);
 
-        // FIXME
         final String linkSecret = messageStatusUrl.replaceFirst(".*linkSecret=", "");
-        assertEquals(64, linkSecret.length());
+        HashCode.fromString(linkSecret);
 
         // call receiver URL
         final MvcResult confirmPage = mockMvc.perform(get(receiveUrl))
@@ -217,9 +217,8 @@ public class MvcTest {
         // receive data after redirect
         final String messageStatusUrl = createMessageResult.getResponse().getRedirectedUrl();
 
-        // FIXME
         final String linkSecret = messageStatusUrl.replaceFirst(".*linkSecret=", "");
-        assertEquals(64, linkSecret.length());
+        HashCode.fromString(linkSecret);
 
         final MvcResult messageStatusResult = mockMvc.perform(get(messageStatusUrl))
             .andExpect(status().isOk())
