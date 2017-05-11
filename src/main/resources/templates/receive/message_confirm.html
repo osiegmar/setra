@@ -17,6 +17,7 @@
     </div>
 
     <form th:action="@{/receive/confirm/{id}(id=${id})}" th:object="${command}" method="get">
+    	<input type="hidden" name="linkSecret" th:value="${linkSecret}"></input>
         <button type="submit" class="btn btn-primary">
             <i class="glyphicon glyphicon-ok icon-white"></i>
             Yes, show me the message!
