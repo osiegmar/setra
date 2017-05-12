@@ -100,10 +100,10 @@ public class ReceiveController {
         return FORM_MSG_DISPLAY;
     }
 
-    private void prepareMessage(final String id,
-        final String linkSecret,
-        final String password, final Model model,
-                                final HttpSession session) {
+    private void prepareMessage(
+        final String id,
+        final String linkSecret, final String password,
+        final Model model, final HttpSession session) {
 
         final DecryptedMessage decryptedMessage =
             messageService.decryptAndBurnMessage(id,

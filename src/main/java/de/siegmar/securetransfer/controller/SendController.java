@@ -145,7 +145,9 @@ public class SendController {
             .addFlashAttribute("messageSent", true)
             .addFlashAttribute("message", command.getMessage());
 
-        return new ModelAndView("redirect:/send/" + senderId + "?linkSecret=" + linkSecret);
+        return
+            new ModelAndView("redirect:/send/" + senderId)
+            .addObject("linkSecret", linkSecret);
     }
 
 
