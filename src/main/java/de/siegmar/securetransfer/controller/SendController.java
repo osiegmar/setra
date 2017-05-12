@@ -208,7 +208,7 @@ public class SendController {
      */
     @GetMapping("/{id:[a-f0-9]{64}}")
     public String created(@PathVariable("id") final String id,
-        @RequestParam("linkSecret") final String linkSecret,
+        @RequestParam(name="linkSecret") final String linkSecret,
                           final Model model,
                           final UriComponentsBuilder uriComponentsBuilder) {
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
@@ -221,7 +221,8 @@ public class SendController {
 
         model
             .addAttribute("receiveUrl", receiveUrl)
-            .addAttribute("senderMessage", senderMessage);
+            .addAttribute("senderMessage", senderMessage)
+            .addAttribute("linkSecret", linkSecret);
         return FORM_MSG_STATUS;
     }
 
@@ -230,6 +231,7 @@ public class SendController {
      */
     @DeleteMapping("/{id:[a-f0-9]{64}}")
     public String burn(@PathVariable("id") final String id,
+        @RequestParam("linkSecret") final String linkSecret,
                        final RedirectAttributes redirectAttributes) {
 
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
@@ -245,7 +247,7 @@ public class SendController {
             redirectAttributes.addFlashAttribute("messageBurned", true);
         }
 
-        return "redirect:/send/" + id;
+        return String.format("redirect:/send/%s?linkSecret=%s", id, linkSecret);
     }
 
     private abstract class AbstractMultipartVisitor {
