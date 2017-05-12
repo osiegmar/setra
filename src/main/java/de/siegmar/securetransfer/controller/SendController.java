@@ -208,7 +208,7 @@ public class SendController {
      */
     @GetMapping("/{id:[a-f0-9]{64}}")
     public String created(@PathVariable("id") final String id,
-        @RequestParam(name="linkSecret") final String linkSecret,
+        @RequestParam("linkSecret") final String linkSecret,
                           final Model model,
                           final UriComponentsBuilder uriComponentsBuilder) {
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
