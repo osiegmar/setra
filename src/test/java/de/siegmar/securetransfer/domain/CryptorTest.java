@@ -17,9 +17,6 @@
 package de.siegmar.securetransfer.domain;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import java.io.UncheckedIOException;
 
 import org.junit.Test;
 
@@ -39,28 +36,6 @@ public class CryptorTest {
         final byte[] encrypted = cryptor.encryptString(text, new KeyIv(key, iv));
         final String decrypted = cryptor.decryptString(encrypted, new KeyIv(key, iv));
         assertEquals(text, decrypted);
-    }
-
-    @Test
-    public void testWrongKey() {
-        final byte[] key = cryptor.newKey();
-        final byte[] iv = cryptor.newIv();
-
-        final String text = "foo";
-        final byte[] encrypted = cryptor.encryptString(text, new KeyIv(key, iv));
-        try {
-            cryptor.decryptString(encrypted, new KeyIv(mutateKey(key), iv));
-            fail("expect exception");
-        } catch (final UncheckedIOException ioe) {
-            // ok
-        }
-    }
-
-
-    private static byte[] mutateKey(final byte[] key) {
-        final byte[] wrongKey = key.clone();
-        wrongKey[0]++;
-        return wrongKey;
     }
 
 }
