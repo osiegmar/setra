@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItemIterator;
@@ -49,12 +50,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
 
 import de.siegmar.securetransfer.config.SecureTransferConfiguration;
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
@@ -114,6 +117,9 @@ public class SendController {
         // Create encryptionKey and initialization vector (IV) to encrypt data
         final KeyIv encryptionKey = messageService.newEncryptionKey();
 
+        // secret shared with receiver using the link - not stored in database
+        final String linkSecret = messageService.newRandomId();
+
         final DataBinder binder = initBinder();
 
         final List<SecretFile> tmpFiles = handleStream(req, encryptionKey, binder);
@@ -132,14 +138,16 @@ public class SendController {
         }
 
         final String senderId = messageService.storeMessage(command.getMessage(), tmpFiles,
-            encryptionKey, command.getPassword(),
+            encryptionKey, HashCode.fromString(linkSecret).asBytes(), command.getPassword(),
             Instant.now().plus(command.getExpirationDays(), ChronoUnit.DAYS));
 
         redirectAttributes
             .addFlashAttribute("messageSent", true)
             .addFlashAttribute("message", command.getMessage());
 
-        return new ModelAndView("redirect:/send/" + senderId);
+        return
+            new ModelAndView("redirect:/send/" + senderId)
+            .addObject("linkSecret", linkSecret);
     }
 
 
@@ -200,6 +208,7 @@ public class SendController {
      */
     @GetMapping("/{id:[a-f0-9]{64}}")
     public String created(@PathVariable("id") final String id,
+        @RequestParam("linkSecret") final String linkSecret,
                           final Model model,
                           final UriComponentsBuilder uriComponentsBuilder) {
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
@@ -207,11 +216,13 @@ public class SendController {
         final String receiveUrl = MvcUriComponentsBuilder
             .fromMappingName(uriComponentsBuilder, "RC#receive")
             .arg(0, senderMessage.getReceiverId())
+            .arg(1, linkSecret)
             .build();
 
         model
             .addAttribute("receiveUrl", receiveUrl)
-            .addAttribute("senderMessage", senderMessage);
+            .addAttribute("senderMessage", senderMessage)
+            .addAttribute("linkSecret", linkSecret);
         return FORM_MSG_STATUS;
     }
 
@@ -220,6 +231,7 @@ public class SendController {
      */
     @DeleteMapping("/{id:[a-f0-9]{64}}")
     public String burn(@PathVariable("id") final String id,
+        @RequestParam("linkSecret") final String linkSecret,
                        final RedirectAttributes redirectAttributes) {
 
         final SenderMessage senderMessage = messageService.getSenderMessage(id);
@@ -235,7 +247,7 @@ public class SendController {
             redirectAttributes.addFlashAttribute("messageBurned", true);
         }
 
-        return "redirect:/send/" + id;
+        return String.format("redirect:/send/%s?linkSecret=%s", id, linkSecret);
     }
 
     private abstract class AbstractMultipartVisitor {

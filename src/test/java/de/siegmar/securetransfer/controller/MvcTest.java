@@ -49,6 +49,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
 
 import de.siegmar.securetransfer.controller.dto.EncryptMessageCommand;
@@ -137,6 +138,9 @@ public class MvcTest {
 
         assertNotNull(receiveUrl);
 
+        final String linkSecret = messageStatusUrl.replaceFirst(".*linkSecret=", "");
+        HashCode.fromString(linkSecret);
+
         // call receiver URL
         final MvcResult confirmPage = mockMvc.perform(get(receiveUrl))
             .andExpect(status().isOk())
@@ -149,7 +153,8 @@ public class MvcTest {
             confirmPageDoc.getElementsByTag("form").attr("action");
 
         // Receive message
-        final MvcResult messageResult = mockMvc.perform(get(confirmUrl))
+        final MvcResult messageResult = mockMvc.perform(get(confirmUrl)
+            .param("linkSecret", linkSecret))
             .andExpect(status().isOk())
             .andExpect(content().contentType("text/html;charset=UTF-8"))
             .andExpect(view().name("receive/message"))
@@ -212,6 +217,9 @@ public class MvcTest {
         // receive data after redirect
         final String messageStatusUrl = createMessageResult.getResponse().getRedirectedUrl();
 
+        final String linkSecret = messageStatusUrl.replaceFirst(".*linkSecret=", "");
+        HashCode.fromString(linkSecret);
+
         final MvcResult messageStatusResult = mockMvc.perform(get(messageStatusUrl))
             .andExpect(status().isOk())
             .andExpect(content().contentType("text/html;charset=UTF-8"))
@@ -246,6 +254,7 @@ public class MvcTest {
 
         // Receive message
         final MvcResult messageResult = mockMvc.perform(post(passwordUrl)
+            .param("linkSecret", linkSecret)
             .param("password", password))
             .andExpect(status().isOk())
             .andExpect(content().contentType("text/html;charset=UTF-8"))

@@ -18,6 +18,7 @@ package de.siegmar.securetransfer.controller;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
@@ -34,8 +35,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.google.common.hash.HashCode;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 
@@ -65,8 +68,12 @@ public class ReceiveController {
      * Ask for message retrieval (return confirm or password dialog).
      */
     @GetMapping("/{id:[a-f0-9]{64}}")
-    public String receive(@PathVariable("id") final String id, final Model model) {
+    public String receive(@PathVariable("id") final String id,
+        @RequestParam("linkSecret") final String linkSecret,
+        final Model model) {
         final boolean isPasswordProtected = messageService.isMessagePasswordProtected(id);
+
+        model.addAttribute("linkSecret", linkSecret);
 
         if (isPasswordProtected) {
             model
@@ -82,19 +89,25 @@ public class ReceiveController {
      * Receive non-password protected message.
      */
     @GetMapping("/confirm/{id:[a-f0-9]{64}}")
-    public String confirm(@PathVariable("id") final String id, final Model model,
-                          final HttpSession session) {
+    public String confirm(
+            @PathVariable("id") final String id,
+            @ModelAttribute("linkSecret") final String linkSecret,
+            final Model model,
+            final HttpSession session) {
 
-        prepareMessage(id, null, model, session);
+        prepareMessage(id, linkSecret, null, model, session);
 
         return FORM_MSG_DISPLAY;
     }
 
-    private void prepareMessage(final String id, final String password, final Model model,
-                                final HttpSession session) {
+    private void prepareMessage(
+        final String id,
+        final String linkSecret, final String password,
+        final Model model, final HttpSession session) {
 
         final DecryptedMessage decryptedMessage =
-            messageService.decryptAndBurnMessage(id, password);
+            messageService.decryptAndBurnMessage(id,
+                HashCode.fromString(linkSecret).asBytes(), password);
 
         model.addAttribute("decryptedMessage", decryptedMessage);
 
@@ -112,6 +125,7 @@ public class ReceiveController {
      */
     @PostMapping("/password/{id:[a-f0-9]{64}}")
     public String password(@PathVariable("id") final String id,
+                           @ModelAttribute("linkSecret") final String linkSecret,
                            @Valid @ModelAttribute("command") final DecryptMessageCommand cmd,
                            final Errors errors, final Model model,
                            final HttpSession session) {
@@ -122,7 +136,7 @@ public class ReceiveController {
         }
 
         try {
-            prepareMessage(id, cmd.getPassword(), model, session);
+            prepareMessage(id, linkSecret, cmd.getPassword(), model, session);
             return FORM_MSG_DISPLAY;
         } catch (final IllegalStateException e) {
             errors.rejectValue("password", null, "Invalid password");

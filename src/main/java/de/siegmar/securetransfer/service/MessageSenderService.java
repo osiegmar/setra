@@ -64,15 +64,18 @@ public class MessageSenderService {
      * Stores a new secure message and return the senderId.
      */
     public String storeMessage(final String message, final List<SecretFile> files,
-                               final KeyIv encryptionKey, final String password,
+                               final KeyIv encryptionKey,
+                               final byte[] linkSecret,
+                               final String password,
                                final Instant expiration) {
 
         final boolean isMessagePasswordProtected = password != null;
 
         final String senderId = newRandomId();
 
-        final String receiverId = storeMessage(senderId, message, encryptionKey, files, password,
-            expiration);
+        final String receiverId = storeMessage(
+            senderId, message, encryptionKey, files,
+            linkSecret, password, expiration);
 
         saveSenderMessage(senderId,
             new SenderMessage(senderId, receiverId, isMessagePasswordProtected, expiration));
@@ -82,7 +85,7 @@ public class MessageSenderService {
 
     String storeMessage(final String senderId, final String message,
                         final KeyIv encryptionKey, final List<SecretFile> files,
-                        final String password, final Instant expiration) {
+                        final byte[] linkSecret, final String password, final Instant expiration) {
 
         Objects.requireNonNull(senderId, "senderId must not be null");
 
@@ -95,7 +98,8 @@ public class MessageSenderService {
             receiverId,
             senderId,
             hashedPassword,
-            encryptKey(MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
+            encryptKey(linkSecret,
+                MoreObjects.firstNonNull(password, DEFAULT_PASSWORD), encryptionKey),
             encryptMessage(message, encryptionKey.getKey()),
             files,
             expiration
@@ -106,10 +110,23 @@ public class MessageSenderService {
         return receiverId;
     }
 
-    private KeyIv encryptKey(final String password, final KeyIv encryptionKey) {
-        final byte[] saltedPasswordHash = cryptor.keyFromSaltedPassword(password);
+    /**
+     * Encrypt the key used for message+file encryption with
+     * <ul>
+     *  <li> secret value on link
+     *  <li> the optional user-supplied password.
+     * </ul>
+     *
+     */
+    private KeyIv encryptKey(
+        final byte[] linkSecret,
+        final String password, final KeyIv encryptionKey) {
+        Preconditions.checkNotNull(linkSecret);
+        Preconditions.checkNotNull(password);
+        final byte[] saltedSecretHash =
+            cryptor.keyFromSaltedPasswordAndSecret(password, linkSecret);
         final byte[] encryptedKey = cryptor.encrypt(encryptionKey.getKey(),
-            new KeyIv(saltedPasswordHash, encryptionKey.getIv()));
+            new KeyIv(saltedSecretHash, encryptionKey.getIv()));
 
         return new KeyIv(encryptedKey, encryptionKey.getIv());
     }
@@ -138,7 +155,7 @@ public class MessageSenderService {
         return senderMessage;
     }
 
-    String newRandomId() {
+    public String newRandomId() {
         final UUID uuid = UUID.randomUUID();
         return Hashing.sha256().newHasher()
             .putLong(System.nanoTime())

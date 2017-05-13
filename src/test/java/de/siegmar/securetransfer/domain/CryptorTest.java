@@ -28,7 +28,7 @@ public class CryptorTest {
         new Cryptor(new byte[]{34, 23, 56, 23, 68, 34, 23, 54});
 
     @Test
-    public void test() {
+    public void testSuccess() {
         final byte[] key = cryptor.newKey();
         final byte[] iv = cryptor.newIv();
 

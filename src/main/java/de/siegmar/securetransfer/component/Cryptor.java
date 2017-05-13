@@ -29,6 +29,7 @@ import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -152,9 +153,10 @@ public class Cryptor {
             new SecretKeySpec(keyIv.getKey(), "AES"), new IvParameterSpec(keyIv.getIv()));
     }
 
-    public byte[] keyFromSaltedPassword(final String password) {
+    public byte[] keyFromSaltedPasswordAndSecret(final String password, final byte[] linkSecret) {
         return Hashing.sha256().newHasher()
             .putBytes(salt)
+            .putBytes(linkSecret)
             .putString(password, StandardCharsets.UTF_8)
             .hash().asBytes();
     }

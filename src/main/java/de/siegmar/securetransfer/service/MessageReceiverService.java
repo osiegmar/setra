@@ -28,6 +28,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
 
 import de.siegmar.securetransfer.component.Cryptor;
 import de.siegmar.securetransfer.domain.CryptedData;
@@ -77,7 +78,8 @@ public class MessageReceiverService {
         return receiverMessage;
     }
 
-    public DecryptedMessage decryptAndBurnMessage(final String receiverId, final String password) {
+    public DecryptedMessage decryptAndBurnMessage(
+        final String receiverId, final byte[] linkSecret, final String password) {
         final ReceiverMessage receiverMessage = getReceiverMessage(receiverId);
 
         if (password != null) {
@@ -91,7 +93,9 @@ public class MessageReceiverService {
 
         // Decrypt the encryption key with the given (validated) password
         final byte[] encryptionKey =
-            decryptEncryptionKey(MoreObjects.firstNonNull(password, DEFAULT_PASSWORD),
+            decryptEncryptionKey(
+                linkSecret,
+                MoreObjects.firstNonNull(password, DEFAULT_PASSWORD),
                 receiverMessage);
 
         final List<DecryptedFile> decryptedFiles = receiverMessage.getFiles() == null
@@ -136,11 +140,19 @@ public class MessageReceiverService {
         throw new IllegalStateException("Incorrect password");
     }
 
-    private byte[] decryptEncryptionKey(final String password, final ReceiverMessage message) {
-        final byte[] saltedPasswordHash = cryptor.keyFromSaltedPassword(password);
+    private byte[] decryptEncryptionKey(
+        final byte[] linkSecret,
+        final String password, final ReceiverMessage message) {
+
+        Preconditions.checkNotNull(linkSecret);
+        Preconditions.checkNotNull(password);
+        final byte[] saltedSecretHash =
+            cryptor.keyFromSaltedPasswordAndSecret(password, linkSecret);
+
         final byte[] key = message.getKeyIv().getKey();
         final byte[] iv = message.getKeyIv().getIv();
-        return cryptor.decrypt(key, new KeyIv(saltedPasswordHash, iv));
+
+        return cryptor.decrypt(key, new KeyIv(saltedSecretHash, iv));
     }
 
     private String decryptMessage(final CryptedData message, final byte[] encryptionKey) {
