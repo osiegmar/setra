@@ -29,8 +29,16 @@ $(function () {
     });
     
     $(document).on('submit', 'form', function(event) {
-        $.blockUI({ overlayCSS: { backgroundColor: '#00f' } }); 
-        setTimeout($.unblockUI, 2000); 
+        var abortSend = function() {
+            $.unblockUI();
+            history.go(0); // reset page
+        };
+        $.blockUI({
+            message: 'Please wait .. click to ABORT',
+            overlayCSS: { backgroundColor: '#00f' },
+            onOverlayClick: abortSend
+            }); 
+        setTimeout($.unblockUI, 10000); 
     }); 
     
 });
