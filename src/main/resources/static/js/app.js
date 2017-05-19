@@ -27,4 +27,10 @@ $(function () {
         setTooltip(e.trigger, 'Failed!');
         hideTooltip(e.trigger);
     });
+    
+    $(document).on('submit', 'form', function(event) {
+        $.blockUI({ overlayCSS: { backgroundColor: '#00f' } }); 
+        setTimeout($.unblockUI, 2000); 
+    }); 
+    
 });
