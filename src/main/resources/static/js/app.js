@@ -30,18 +30,21 @@ $(function () {
     
     // must be greater than z-index of maxlength indicator
     $.blockUI.defaults.baseZ = 2000;
+    $.blockUI.defaults.css.border = '6px double #669966';
     
     $(document).on('submit', 'form', function(event) {
         var abortSend = function() {
             $.unblockUI();
             history.go(0); // reset page
         };
-        $.blockUI({
-            message: 'Please wait .. click to ABORT',
-            overlayCSS: { backgroundColor: '#00f' },
-            onOverlayClick: abortSend
+        var block = function() {
+            $.blockUI({
+                message: 'Please wait .. click to ABORT',
+                overlayCSS: { backgroundColor: '#99CC00' },
+                onOverlayClick: abortSend
             }); 
-        setTimeout($.unblockUI, 10000); 
+        };
+        setTimeout(block, 700);
     }); 
     
 });
