@@ -28,6 +28,9 @@ $(function () {
         hideTooltip(e.trigger);
     });
     
+    // must be greater than z-index of maxlength indicator
+    $.blockUI.defaults.baseZ = 2000;
+    
     $(document).on('submit', 'form', function(event) {
         var abortSend = function() {
             $.unblockUI();
