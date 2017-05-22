@@ -32,7 +32,7 @@ $(function () {
     $.blockUI.defaults.baseZ = 2000;
     $.blockUI.defaults.css.border = '6px double #669966';
     
-    $(document).on('submit', 'form', function(event) {
+    $('form.submit--blocking').submit(function(event) {
         var abortSend = function() {
             $.unblockUI();
             history.go(0); // reset page

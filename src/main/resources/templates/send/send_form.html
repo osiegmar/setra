@@ -29,7 +29,8 @@
 
     <p>Securely send your sensitive data.</p>
 
-    <form th:action="@{/send}" method="post" th:object="${command}" enctype="multipart/form-data" autocomplete="off">
+    <form th:action="@{/send}" method="post" class="submit--blocking"
+        th:object="${command}" enctype="multipart/form-data" autocomplete="off">
 
         <div class="panel panel-danger" th:if="${#fields.hasAnyErrors()}">
             <div class="panel-heading">Error processing your request</div>
