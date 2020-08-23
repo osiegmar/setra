@@ -1,6 +1,6 @@
 # Secure Transfer
 
-[![Build Status](https://api.travis-ci.org/osiegmar/setra.svg)](https://travis-ci.org/osiegmar/setra)
+[![Build Status](https://travis-ci.org/osiegmar/setra.svg?branch=master)](https://travis-ci.org/osiegmar/setra)
 
 Web application to transfer text messages and files securely.
 
