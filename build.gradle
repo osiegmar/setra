@@ -36,6 +36,7 @@ dependencies {
     compile('com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8')
     compile('org.webjars:bootstrap:3.3.7-1')
     compile('org.webjars:jquery:3.2.0')
+    compile('org.webjars:jquery-blockui:2.65')
     compile('org.webjars:clipboard.js:1.6.1')
     compile('org.webjars.bower:pwstrength-bootstrap:2.0.3')
     compile('org.webjars.bower:bootstrap-maxlength:1.7.0')
